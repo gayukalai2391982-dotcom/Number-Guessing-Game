@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guessing Game - Enhanced Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-slate-100 min-h-full flex flex-col items-center justify-center p-3 sm:p-6">
+
+    <!-- App Container -->
+    <div id="gameCard" class="w-full max-w-md glass-card rounded-3xl shadow-2xl overflow-hidden p-5 sm:p-7 transition-all duration-300">
+
+        <!-- Title & Header -->
+        <div class="text-center mb-5">
+            <span class="inline-block bg-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 border border-indigo-500/30">Pro Edition</span>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Number Guess Game</h1>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1">Narrow the range and beat your high score!</p>
+        </div>
+
+        <!-- Stats Bar (High Score & Sound Toggle) -->
+        <div class="bg-black/30 border border-white/10 rounded-2xl p-3.5 mb-5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500/20 p-2 rounded-xl text-amber-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Best Score</p>
+                    <p id="highScoreDisplay" class="text-sm font-bold text-amber-300">0 pts</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleSound()" id="soundBtn" class="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-xs text-slate-300 transition-all">
+                    🔊 Sound On
+                </button>
+                <button onclick="resetHighScore()" class="text-xs text-slate-400 hover:text-red-400 transition-colors underline">Reset</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 1: Difficulty & Mode Menu -->
+        <div id="menuScreen" class="space-y-4">
+            
+            <!-- Game Mode Switcher -->
+            <div class="bg-black/20 p-1 rounded-xl border border-white/10 flex text-xs font-semibold">
+                <button id="standardModeBtn" onclick="setGameMode('standard')" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white transition-all">Standard</button>
+                <button id="timedModeBtn" onclick="setGameMode('timed')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition-all">⏱️ Timed (30s)</button>
+            </div>
+
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Difficulty</h2>
+
+            <!-- Easy Button -->
+            <button onclick="startGame(1, 10, 5, 'Easy')" class="w-full group flex items-center justify-between bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold p-3.5 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 border border-emerald-400/30">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl">🌱</span>
+                    <div class="text-left">
+                        <p class="text-sm font-bold">Easy</p>
+                        <p class="text-[11px] text-emerald-200">1 - 10 | 5 Attempts</p>
+                    </div>
+                </div>
+                <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">Select</span>
+            </button>
+
+            <!-- Medium Button -->
+            <button onclick="startGame(1, 50, 7, 'Medium')" class="w-full group flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold p-3.5 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 border border-blue-400/30">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl">⭐</span>
+                    <div class="text-left">
+                        <p class="text-sm font-bold">Medium</p>
+                        <p class="text-[11px] text-blue-200">1 - 50 | 7 Attempts</p>
+                    </div>
+                </div>
+                <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">Select</span>
+            </button>
+
+            <!-- Hard Button -->
+            <button onclick="startGame(1, 100, 10, 'Hard')" class="w-full group flex items-center justify-between bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-semibold p-3.5 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 border border-rose-400/30">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl">🔥</span>
+                    <div class="text-left">
+                        <p class="text-sm font-bold">Hard</p>
+                        <p class="text-[11px] text-rose-200">1 - 100 | 10 Attempts</p>
+                    </div>
+                </div>
+                <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">Select</span>
+            </button>
+
+            <!-- Custom Mode Collapsible Button -->
+            <button onclick="toggleCustomControls()" class="w-full bg-white/5 hover:bg-white/10 text-slate-300 font-medium p-3 rounded-2xl text-xs flex justify-between items-center transition-all border border-white/10">
+                <span>⚙️ Custom Settings</span>
+                <span id="customArrow">▼</span>
+            </button>
+
+            <!-- Custom Mode Form Container -->
+            <div id="customControls" class="hidden bg-black/30 p-4 rounded-2xl border border-white/10 space-y-3">
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Min</label>
+                        <input type="number" id="customMin" value="1" class="w-full bg-slate-900 border border-white/20 rounded-xl p-2 text-center text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Max</label>
+                        <input type="number" id="customMax" value="200" class="w-full bg-slate-900 border border-white/20 rounded-xl p-2 text-center text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Attempts</label>
+                        <input type="number" id="customAttempts" value="12" class="w-full bg-slate-900 border border-white/20 rounded-xl p-2 text-center text-white focus:outline-none">
+                    </div>
+                </div>
+                <button onclick="startCustomGame()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-xl text-xs transition-all">Start Custom Game</button>
+            </div>
+
+            <!-- Match History Accordion -->
+            <div class="pt-2">
+                <button onclick="toggleHistory()" class="text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-between w-full">
+                    <span>📜 Recent History</span>
+                    <span id="historyArrow">▼</span>
+                </button>
+                <div id="historyList" class="hidden mt-2 space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                    <!-- History items populated dynamically -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCREEN 2: Gameplay View -->
+        <div id="gameScreen" class="hidden space-y-4">
+            
+            <!-- Game Info Bar -->
+            <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-3 text-xs">
+                <div>
+                    <span class="text-slate-400">Mode:</span> <span id="currentModeLabel" class="font-bold text-indigo-300">Medium</span>
+                </div>
+                <div id="timerContainer" class="hidden flex items-center space-x-1 text-amber-400 font-bold">
+                    <span>⏱️</span> <span id="timerDisplay">30s</span>
+                </div>
+                <div>
+                    <span class="text-slate-400">Attempts:</span> <span id="attemptsLeftDisplay" class="font-bold text-amber-300 text-sm">7</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Range Visualizer -->
+            <div class="bg-black/30 border border-white/10 rounded-2xl p-3.5 text-center space-y-2">
+                <div class="flex justify-between text-[11px] font-semibold text-slate-400">
+                    <span>Active Range:</span>
+                    <span id="rangeText" class="text-indigo-300 font-bold">1 - 50</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-3 border border-white/10 overflow-hidden relative">
+                    <div id="rangeVisualizerBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500" style="width: 100%; margin-left: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Hint Feedback Banner -->
+            <div id="feedbackContainer" class="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-4 text-center transition-all duration-300">
+                <p id="feedbackTitle" class="text-base font-bold text-white">Make your guess!</p>
+                <p id="feedbackDesc" class="text-xs text-slate-300 mt-0.5">Choose a number within the active range.</p>
+            </div>
+
+            <!-- Guess Input Controls -->
+            <div class="space-y-3">
+                <input type="number" id="guessInput" placeholder="Type guess..." class="w-full bg-slate-900/90 border border-white/20 rounded-2xl px-4 py-3.5 text-center text-xl font-black text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+
+                <!-- Quick Adjust Buttons -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="adjustGuess(-5)" class="bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold py-2 rounded-xl border border-white/10 transition-all">-5</button>
+                    <button onclick="adjustGuess(-1)" class="bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold py-2 rounded-xl border border-white/10 transition-all">-1</button>
+                    <button onclick="adjustGuess(1)" class="bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold py-2 rounded-xl border border-white/10 transition-all">+1</button>
+                    <button onclick="adjustGuess(5)" class="bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold py-2 rounded-xl border border-white/10 transition-all">+5</button>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="submitGuess()" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 border border-indigo-400/30">Submit Guess</button>
+                    <button onclick="quitGame()" class="px-4 bg-white/10 hover:bg-white/20 text-slate-300 font-semibold py-3.5 rounded-2xl transition-all border border-white/10 text-xs">Quit</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCREEN 3: Result View -->
+        <div id="resultScreen" class="hidden text-center space-y-5">
+            <div id="resultIcon" class="text-6xl">🎉</div>
+            <div>
+                <h2 id="resultTitle" class="text-2xl font-black text-white">You Won!</h2>
+                <p id="resultMessage" class="text-slate-300 text-xs mt-1">Excellent guessing skills.</p>
+            </div>
+
+            <!-- Stats breakdown -->
+            <div class="bg-black/30 border border-white/10 rounded-2xl p-4 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Target Number:</span>
+                    <span id="targetNumberDisplay" class="font-bold text-white text-sm">42</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Attempts Used:</span>
+                    <span id="attemptsTakenDisplay" class="font-bold text-indigo-300 text-sm">3</span>
+                </div>
+                <div class="flex justify-between border-t border-white/10 pt-2">
+                    <span class="text-slate-400">Score Earned:</span>
+                    <span id="scoreEarnedDisplay" class="font-bold text-amber-300 text-sm">850 pts</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="replayGame()" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 border border-indigo-400/30 text-xs">Play Again</button>
+                <button onclick="returnToMenu()" class="px-5 bg-white/10 hover:bg-white/20 text-slate-300 font-semibold py-3.5 rounded-2xl transition-all border border-white/10 text-xs">Menu</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom Modal Dialog -->
+    <div id="customModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-white/20 rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center space-y-3">
+            <div id="modalIcon" class="text-3xl">⚠️</div>
+            <h3 id="modalTitle" class="text-base font-bold text-white">Notice</h3>
+            <p id="modalMessage" class="text-xs text-slate-300">Message content here.</p>
+            <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all text-xs">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio Synthesizer using Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                }
+            } catch(e) { console.log(e); }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').innerText = soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+        }
+
+        // Game Configuration & State
+        let gameMode = 'standard'; // 'standard' or 'timed'
+        let minBound = 1;
+        let maxBound = 50;
+        let activeMin = 1;
+        let activeMax = 50;
+        let maxAttemptsAllowed = 7;
+        let modeName = 'Medium';
+        let targetNumber = 0;
+        let currentAttempts = 0;
+        let timerInterval = null;
+        let timeLeft = 30;
+
+        let highScore = localStorage.getItem('ngg_highscore') ? parseInt(localStorage.getItem('ngg_highscore')) : 0;
+        let matchHistory = localStorage.getItem('ngg_history') ? JSON.parse(localStorage.getItem('ngg_history')) : [];
+
+        window.onload = function() {
+            updateHighScoreDisplay();
+            renderHistory();
+            document.getElementById('guessInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitGuess();
+            });
+        };
+
+        function setGameMode(mode) {
+            gameMode = mode;
+            const stdBtn = document.getElementById('standardModeBtn');
+            const timedBtn = document.getElementById('timedModeBtn');
+            if (mode === 'standard') {
+                stdBtn.className = "flex-1 py-2 rounded-lg bg-indigo-600 text-white transition-all";
+                timedBtn.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+            } else {
+                timedBtn.className = "flex-1 py-2 rounded-lg bg-indigo-600 text-white transition-all";
+                stdBtn.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+            }
+        }
+
+        function updateHighScoreDisplay() {
+            document.getElementById('highScoreDisplay').innerText = highScore + ' pts';
+        }
+
+        function resetHighScore() {
+            highScore = 0;
+            localStorage.removeItem('ngg_highscore');
+            updateHighScoreDisplay();
+            showModal('High Score Reset', 'Best score history cleared.', '🗑️');
+        }
+
+        function toggleCustomControls() {
+            const container = document.getElementById('customControls');
+            const arrow = document.getElementById('customArrow');
+            container.classList.toggle('hidden');
+            arrow.innerText = container.classList.contains('hidden') ? '▼' : '▲';
+        }
+
+        function toggleHistory() {
+            const container = document.getElementById('historyList');
+            const arrow = document.getElementById('historyArrow');
+            container.classList.toggle('hidden');
+            arrow.innerText = container.classList.contains('hidden') ? '▼' : '▲';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (matchHistory.length === 0) {
+                list.innerHTML = '<p class="text-[10px] text-slate-500 italic">No matches recorded yet.</p>';
+                return;
+            }
+            list.innerHTML = matchHistory.slice(0, 5).map(item => `
+                <div class="flex justify-between items-center text-[11px] bg-black/20 p-2 rounded-xl border border-white/5">
+                    <span class="${item.win ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}">${item.win ? 'WIN' : 'LOSS'} (${item.mode})</span>
+                    <span class="text-slate-300">${item.score} pts</span>
+                </div>
+            `).join('');
+        }
+
+        function saveHistory(win, mode, score) {
+            matchHistory.unshift({ win, mode, score, date: new Date().toLocaleTimeString() });
+            if (matchHistory.length > 10) matchHistory.pop();
+            localStorage.setItem('ngg_history', JSON.stringify(matchHistory));
+            renderHistory();
+        }
+
+        function startCustomGame() {
+            const min = parseInt(document.getElementById('customMin').value) || 1;
+            const max = parseInt(document.getElementById('customMax').value) || 100;
+            const att = parseInt(document.getElementById('customAttempts').value) || 10;
+            if (min >= max) {
+                showModal('Invalid Range', 'Minimum number must be smaller than maximum.', '⚠️');
+                return;
+            }
+            startGame(min, max, att, 'Custom');
+        }
+
+        function startGame(min, max, attempts, name) {
+            minBound = min;
+            maxBound = max;
+            activeMin = min;
+            activeMax = max;
+            maxAttemptsAllowed = attempts;
+            modeName = name;
+            targetNumber = Math.floor(Math.random() * (maxBound - minBound + 1)) + minBound;
+            currentAttempts = 0;
+
+            document.getElementById('currentModeLabel').innerText = modeName;
+            document.getElementById('attemptsLeftDisplay').innerText = maxAttemptsAllowed;
+            document.getElementById('guessInput').value = '';
+
+            updateRangeVisualizer();
+
+            // Handle Timer Mode
+            const timerContainer = document.getElementById('timerContainer');
+            if (gameMode === 'timed') {
+                timerContainer.classList.remove('hidden');
+                timeLeft = 30;
+                document.getElementById('timerDisplay').innerText = timeLeft + 's';
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('timerDisplay').innerText = timeLeft + 's';
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        triggerGameOver(false, 'Time Expired!');
+                    }
+                }, 1000);
+            } else {
+                timerContainer.classList.add('hidden');
+                clearInterval(timerInterval);
+            }
+
+            // Reset Banner Style
+            const feedbackContainer = document.getElementById('feedbackContainer');
+            feedbackContainer.className = "bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-4 text-center transition-all duration-300";
+            document.getElementById('feedbackTitle').innerText = "Make your guess!";
+            document.getElementById('feedbackDesc').innerText = `Target is between ${activeMin} and ${activeMax}`;
+
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+
+            setTimeout(() => document.getElementById('guessInput').focus(), 100);
+        }
+
+        function updateRangeVisualizer() {
+            document.getElementById('rangeText').innerText = `${activeMin} - ${activeMax}`;
+            const totalSpan = maxBound - minBound + 1;
+            const activeSpan = activeMax - activeMin + 1;
+            const widthPct = Math.max(5, (activeSpan / totalSpan) * 100);
+            const leftPct = ((activeMin - minBound) / totalSpan) * 100;
+
+            const bar = document.getElementById('rangeVisualizerBar');
+            bar.style.width = widthPct + '%';
+            bar.style.marginLeft = leftPct + '%';
+        }
+
+        function adjustGuess(amount) {
+            const input = document.getElementById('guessInput');
+            let current = parseInt(input.value) || Math.floor((activeMin + activeMax) / 2);
+            input.value = Math.max(minBound, Math.min(maxBound, current + amount));
+        }
+
+        function submitGuess() {
+            const input = document.getElementById('guessInput');
+            const val = parseInt(input.value);
+
+            if (isNaN(val) || val < minBound || val > maxBound) {
+                playSound('error');
+                shakeCard();
+                showModal('Out of Range', `Please guess a number between ${minBound} and ${maxBound}.`, '⚠️');
+                return;
+            }
+
+            currentAttempts++;
+            const attemptsLeft = maxAttemptsAllowed - currentAttempts;
+            document.getElementById('attemptsLeftDisplay').innerText = attemptsLeft;
+
+            const feedbackContainer = document.getElementById('feedbackContainer');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackDesc = document.getElementById('feedbackDesc');
+
+            if (val === targetNumber) {
+                playSound('success');
+                triggerGameOver(true);
+            } else {
+                playSound('error');
+                shakeCard();
+
+                if (val < targetNumber) {
+                    activeMin = Math.max(activeMin, val + 1);
+                    feedbackContainer.className = "bg-blue-950/60 border border-blue-500/40 rounded-2xl p-4 text-center transition-all duration-300";
+                    feedbackTitle.innerText = "📈 Higher!";
+                    feedbackDesc.innerText = `${val} is too low. Aim higher!`;
+                } else {
+                    activeMax = Math.min(activeMax, val - 1);
+                    feedbackContainer.className = "bg-rose-950/60 border border-rose-500/40 rounded-2xl p-4 text-center transition-all duration-300";
+                    feedbackTitle.innerText = "📉 Lower!";
+                    feedbackDesc.innerText = `${val} is too high. Aim lower!`;
+                }
+
+                updateRangeVisualizer();
+
+                if (currentAttempts >= maxAttemptsAllowed) {
+                    triggerGameOver(false, 'Out of Attempts!');
+                } else {
+                    input.value = '';
+                    input.focus();
+                }
+            }
+        }
+
+        function triggerGameOver(isWin, customMsg) {
+            clearInterval(timerInterval);
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            document.getElementById('targetNumberDisplay').innerText = targetNumber;
+            document.getElementById('attemptsTakenDisplay').innerText = currentAttempts;
+
+            let earnedScore = 0;
+
+            if (isWin) {
+                // Confetti animation
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+                // Calculate Score
+                const baseScore = 1000;
+                const attemptPenalty = (currentAttempts - 1) * 100;
+                const timeBonus = gameMode === 'timed' ? timeLeft * 10 : 0;
+                earnedScore = Math.max(100, baseScore - attemptPenalty + timeBonus);
+
+                resultIcon.innerText = "🎉";
+                resultTitle.innerText = "You Won!";
+                resultMessage.innerText = "Fantastic memory and deduction!";
+
+                if (earnedScore > highScore) {
+                    highScore = earnedScore;
+                    localStorage.setItem('ngg_highscore', highScore);
+                    updateHighScoreDisplay();
+                }
+            } else {
+                resultIcon.innerText = "😢";
+                resultTitle.innerText = "Game Over";
+                resultMessage.innerText = customMsg || "Better luck next time!";
+                earnedScore = 0;
+            }
+
+            document.getElementById('scoreEarnedDisplay').innerText = earnedScore + ' pts';
+            saveHistory(isWin, modeName, earnedScore);
+        }
+
+        function shakeCard() {
+            const card = document.getElementById('gameCard');
+            card.classList.add('animate-shake');
+            setTimeout(() => card.classList.remove('animate-shake'), 400);
+        }
+
+        function quitGame() {
+            clearInterval(timerInterval);
+            returnToMenu();
+        }
+
+        function replayGame() {
+            startGame(minBound, maxBound, maxAttemptsAllowed, modeName);
+        }
+
+        function returnToMenu() {
+            clearInterval(timerInterval);
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('menuScreen').classList.remove('hidden');
+        }
+
+        function showModal(title, message, icon) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modalIcon').innerText = icon || '⚠️';
+            document.getElementById('customModal').classList.remove('hidden');
+            document.getElementById('customModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.remove('flex');
+            document.getElementById('customModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
